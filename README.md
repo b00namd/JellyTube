@@ -15,6 +15,7 @@ Ein Jellyfin-Plugin zum Herunterladen von YouTube-Videos und Playlists direkt in
 - Jellyfin-Bibliothek nach Download automatisch aktualisieren
 - Geplante Playlist-Downloads per Scheduled Task
 - yt-dlp und ffmpeg Verfügbarkeitscheck in den Einstellungen
+- Gesehene Videos aus geplanten Downloads automatisch löschen (kein erneuter Download)
 - Vollständig auf Deutsch
 
 ---
@@ -67,6 +68,7 @@ yt-dlp und ffmpeg können entweder im Systempfad (PATH) liegen oder der vollstä
 | Vorschaubilder herunterladen | Thumbnails speichern |
 | Bibliothek aktualisieren | Scan nach Download |
 | Geplante Downloads | Playlists automatisch prüfen |
+| Gesehene Videos löschen | Nur für geplante Downloads: Datei nach dem Schauen löschen, kein erneuter Download |
 
 ---
 
