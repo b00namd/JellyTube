@@ -275,6 +275,14 @@
                             <div class="fieldDescription">Videos aus Playlists überspringen, die älter als diese Anzahl Tage sind. 0 = kein Limit.</div>
                         </div>
 
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="DeleteWatchedScheduledVideos" name="DeleteWatchedScheduledVideos" type="checkbox" is="emby-checkbox" />
+                                <span>Gesehene Videos automatisch löschen</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">Gilt nur für geplante Downloads. Wird ein Video als gesehen markiert, wird die Datei automatisch gelöscht und das Video nicht erneut heruntergeladen.</div>
+                        </div>
+
                         <div>
                             <button id="yt-save-btn" is="emby-button" type="button" class="raised button-submit block">
                                 Einstellungen speichern

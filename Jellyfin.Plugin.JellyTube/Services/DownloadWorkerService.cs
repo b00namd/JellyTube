@@ -20,6 +20,7 @@ public class DownloadWorkerService : BackgroundService
     private readonly NfoWriterService _nfo;
     private readonly ThumbnailService _thumbs;
     private readonly LibraryOrganizationService _library;
+    private readonly DownloadArchiveService _archive;
     private readonly ILibraryManager _libraryManager;
     private readonly ILogger<DownloadWorkerService> _logger;
 
@@ -32,6 +33,7 @@ public class DownloadWorkerService : BackgroundService
         NfoWriterService nfo,
         ThumbnailService thumbs,
         LibraryOrganizationService library,
+        DownloadArchiveService archive,
         ILibraryManager libraryManager,
         ILogger<DownloadWorkerService> logger)
     {
@@ -40,6 +42,7 @@ public class DownloadWorkerService : BackgroundService
         _nfo = nfo;
         _thumbs = thumbs;
         _library = library;
+        _archive = archive;
         _libraryManager = libraryManager;
         _logger = logger;
     }
@@ -108,9 +111,11 @@ public class DownloadWorkerService : BackgroundService
             job.CurrentFile = dp.Data;
         });
 
+        var archivePath = job.IsScheduled ? _archive.ArchivePath : null;
+
         bool success = job.IsPlaylist
-            ? await _ytDlp.DownloadPlaylistAsync(job.Url, outputDir, downloadProgress, ct)
-            : await _ytDlp.DownloadVideoAsync(job.Url, outputDir, downloadProgress, ct);
+            ? await _ytDlp.DownloadPlaylistAsync(job.Url, outputDir, downloadProgress, ct, archivePath)
+            : await _ytDlp.DownloadVideoAsync(job.Url, outputDir, downloadProgress, ct, archivePath);
 
         if (!success)
         {
@@ -132,6 +137,8 @@ public class DownloadWorkerService : BackgroundService
 
             if (videoFile is not null)
             {
+                job.DownloadedFilePath = videoFile;
+
                 if (config.WriteNfoFiles)
                 {
                     var nfoPath = LibraryOrganizationService.GetNfoPath(videoFile);

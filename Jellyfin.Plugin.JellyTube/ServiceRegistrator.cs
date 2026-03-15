@@ -15,11 +15,13 @@ public class ServiceRegistrator : IPluginServiceRegistrator
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
         serviceCollection.AddSingleton<DownloadQueueService>();
+        serviceCollection.AddSingleton<DownloadArchiveService>();
         serviceCollection.AddTransient<YtDlpService>();
         serviceCollection.AddTransient<NfoWriterService>();
         serviceCollection.AddTransient<ThumbnailService>();
         serviceCollection.AddTransient<LibraryOrganizationService>();
         serviceCollection.AddHttpClient("thumbnail");
         serviceCollection.AddHostedService<DownloadWorkerService>();
+        serviceCollection.AddHostedService<WatchedVideoCleanupService>();
     }
 }

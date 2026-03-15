@@ -81,4 +81,9 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets a value indicating whether to download video thumbnails.
     /// </summary>
     public bool DownloadThumbnails { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether watched videos from scheduled downloads are automatically deleted.
+    /// </summary>
+    public bool DeleteWatchedScheduledVideos { get; set; } = false;
 }

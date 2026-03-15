@@ -24,9 +24,9 @@ public class DownloadQueueService
     /// <summary>
     /// Enqueues a new download job and returns it.
     /// </summary>
-    public DownloadJob Enqueue(string url, bool isPlaylist = false)
+    public DownloadJob Enqueue(string url, bool isPlaylist = false, bool isScheduled = false)
     {
-        var job = new DownloadJob { Url = url, IsPlaylist = isPlaylist };
+        var job = new DownloadJob { Url = url, IsPlaylist = isPlaylist, IsScheduled = isScheduled };
         _jobs[job.Id] = job;
         _workChannel.Writer.TryWrite(job.Id);
         return job;

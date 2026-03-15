@@ -85,6 +85,7 @@
             document.getElementById('EnableScheduledDownloads').checked = !!config.EnableScheduledDownloads;
             document.getElementById('ScheduledPlaylistUrls').value      = config.ScheduledPlaylistUrls || '';
             document.getElementById('PlaylistMaxAgeDays').value         = config.PlaylistMaxAgeDays || 30;
+            document.getElementById('DeleteWatchedScheduledVideos').checked = !!config.DeleteWatchedScheduledVideos;
         });
     }
 
@@ -108,6 +109,7 @@
             config.EnableScheduledDownloads   = document.getElementById('EnableScheduledDownloads').checked;
             config.ScheduledPlaylistUrls      = document.getElementById('ScheduledPlaylistUrls').value;
             config.PlaylistMaxAgeDays         = parseInt(document.getElementById('PlaylistMaxAgeDays').value) || 30;
+            config.DeleteWatchedScheduledVideos = document.getElementById('DeleteWatchedScheduledVideos').checked;
 
             ApiClient.updatePluginConfiguration(PLUGIN_ID, config).then(function () {
                 showToast('Einstellungen gespeichert.');

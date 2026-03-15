@@ -36,4 +36,10 @@ public class DownloadJob
 
     /// <summary>Gets or sets the fetched video metadata.</summary>
     public VideoMetadata? Metadata { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether this job was started by the scheduled task.</summary>
+    public bool IsScheduled { get; set; }
+
+    /// <summary>Gets or sets the full path to the downloaded video file (set after download completes).</summary>
+    public string? DownloadedFilePath { get; set; }
 }

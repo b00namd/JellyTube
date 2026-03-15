@@ -66,7 +66,7 @@ public class DownloadQueueTask : IScheduledTask
                 var trimmed = url.Trim();
                 if (!string.IsNullOrEmpty(trimmed))
                 {
-                    _queue.Enqueue(trimmed, isPlaylist: true);
+                    _queue.Enqueue(trimmed, isPlaylist: true, isScheduled: true);
                     _logger.LogInformation("Scheduled playlist enqueued: {Url}", trimmed);
                 }
             }

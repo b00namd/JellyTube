@@ -58,12 +58,13 @@ public class YtDlpService
         string url,
         string outputDir,
         IProgress<DownloadProgress>? progress,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? archivePath = null)
     {
         var ytdl = CreateClient(outputDir);
         var config = Plugin.Instance!.Configuration;
         var mergeFormat = GetMergeFormat(config.PreferredContainer);
-        var opts = BuildSubtitleOptions(playlist: false);
+        var opts = BuildSubtitleOptions(playlist: false, archivePath: archivePath);
 
         try
         {
@@ -96,11 +97,12 @@ public class YtDlpService
         string url,
         string outputDir,
         IProgress<DownloadProgress>? progress,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? archivePath = null)
     {
         var ytdl = CreateClient(outputDir);
         var config = Plugin.Instance!.Configuration;
-        var opts = BuildSubtitleOptions(playlist: true);
+        var opts = BuildSubtitleOptions(playlist: true, archivePath: archivePath);
 
         try
         {
@@ -156,7 +158,7 @@ public class YtDlpService
             _ => DownloadMergeFormat.Mp4
         };
 
-    private static OptionSet BuildSubtitleOptions(bool playlist)
+    private static OptionSet BuildSubtitleOptions(bool playlist, string? archivePath = null)
     {
         var config = Plugin.Instance!.Configuration;
 
@@ -174,6 +176,12 @@ public class YtDlpService
         if (playlist && config.PlaylistMaxAgeDays > 0)
         {
             opts.DateAfter = DateTime.UtcNow.AddDays(-config.PlaylistMaxAgeDays);
+        }
+
+        // Use archive file to skip already-downloaded (or deleted) videos
+        if (!string.IsNullOrEmpty(archivePath))
+        {
+            opts.DownloadArchive = archivePath;
         }
 
         return opts;
