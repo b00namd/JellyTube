@@ -28,7 +28,7 @@ In Jellyfin:
 
 Repository-URL:
 ```
-https://raw.githubusercontent.com/b00namd/JellyfinYT/master/dist/manifest.json
+https://raw.githubusercontent.com/b00namd/JellyTube/master/dist/manifest.json
 ```
 
 ### 2. Plugin installieren
@@ -75,9 +75,6 @@ yt-dlp und ffmpeg können entweder im Systempfad (PATH) liegen oder der vollstä
 ```powershell
 # Plugin bauen und ZIP + Manifest erstellen
 .\build.ps1
-
-# Direkt auf den Jellyfin-Server deployen (SSH/SCP)
-.\deploy.ps1 -RestartJellyfin
 ```
 
 ---
