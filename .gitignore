@@ -1,0 +1,18 @@
+# PowerShell scripts (local only, exclude most)
+*.ps1
+!build.ps1
+!serve.ps1
+
+# Build output
+bin/
+obj/
+dist/publish/
+
+# IDE
+.vs/
+*.user
+*.suo
+
+# OS
+Thumbs.db
+.DS_Store

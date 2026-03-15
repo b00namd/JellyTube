@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:jellyfin.org)",
+      "WebFetch(domain:kodi.wiki)",
+      "WebFetch(domain:www.nuget.org)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet sln:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet-script -e \":*)",
+      "Bash(powershell -Command \":*)",
+      "Bash(find ~/.nuget/packages/jellyfin.controller/10.9.11 -name *.dll -exec sh -c \"strings \"\"$1\"\" | grep -i \"\"PluginService\\\\|IPluginService\\\\|ServiceRegistrat\"\"\" _ {})",
+      "Bash(2)",
+      "Bash(find ~/.nuget/packages/ -path *jellyfin* -name *.xml)",
+      "Bash(find ~/.nuget/packages/youtubedlsharp/ -name *.xml)",
+      "Bash(find ~/.nuget/packages/youtubedlsharp/1.2.0 -name *.cs)",
+      "Bash(find ~/.nuget/packages/youtubedlsharp/1.2.0 -name VideoData.cs -o -name *.dll)",
+      "Bash(powershell -ExecutionPolicy Bypass -File build.ps1)",
+      "Bash(powershell -Command \"Add-Type -Path ''/c/Users/b00na/.nuget/packages/jellyfin.controller/10.9.11/lib/net8.0/MediaBrowser.Controller.dll''; [System.AppDomain]::CurrentDomain.GetAssemblies\\(\\) | Where-Object { $_.GetName\\(\\).Name -eq ''MediaBrowser.Controller'' } | ForEach-Object { $_.GetTypes\\(\\) | Where-Object { $_.Name -like ''*Thumb*'' -or $_.Name -like ''*Image*'' } | Select-Object FullName }\")",
+      "Bash(powershell -Command \"Add-Type -Path ''C:\\\\Users\\\\b00na\\\\.nuget\\\\packages\\\\jellyfin.common\\\\10.9.11\\\\lib\\\\net8.0\\\\MediaBrowser.Common.dll''; [System.AppDomain]::CurrentDomain.GetAssemblies\\(\\) | Where-Object { $_.GetName\\(\\).Name -eq ''MediaBrowser.Common'' } | ForEach-Object { $_.GetTypes\\(\\) | Where-Object Name -like ''BasePlugin*'' } | Select-Object FullName, IsInterface\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"c:\\\\Users\\\\b00na\\\\Nextcloud2\\\\Projekte\\\\JellyFin YT\\\\create-logo.ps1\")",
+      "Bash(powershell -Command \"Get-Content dist/manifest.json | Select-String ''''changelog''''\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File deploy.ps1 -RestartJellyfin)",
+      "Bash(powershell -Command \"Rename-Item -Path ''Jellyfin.Plugin.YoutubeDownloader'' -NewName ''Jellyfin.Plugin.JellyTube''\")",
+      "Bash(powershell -Command \"Remove-Item -Recurse -Force ''Jellyfin.Plugin.YoutubeDownloader\\\\bin'',''Jellyfin.Plugin.YoutubeDownloader\\\\obj'' -ErrorAction SilentlyContinue; Rename-Item -Path ''Jellyfin.Plugin.YoutubeDownloader'' -NewName ''Jellyfin.Plugin.JellyTube''\")"
+    ]
+  }
+}

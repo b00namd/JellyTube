@@ -1,0 +1,21 @@
+[
+    {
+        "owner":  "local",
+        "versions":  [
+                         {
+                             "changelog":  "Initiale Version",
+                             "version":  "1.0.0.0",
+                             "checksum":  "5345357948e85278d1cc226e762e3a77",
+                             "timestamp":  "2026-03-15T21:08:01Z",
+                             "targetAbi":  "10.9.0.0",
+                             "sourceUrl":  "https://raw.githubusercontent.com/b00namd/JellyTube/master/dist/Jellyfin.Plugin.JellyTube_1.0.0.0.zip"
+                         }
+                     ],
+        "overview":  "Verwendet yt-dlp zum Herunterladen von YouTube-Inhalten und erstellt NFO-Metadaten sowie Vorschaubilder.",
+        "category":  "General",
+        "guid":  "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "name":  "JellyTube",
+        "description":  "YouTube-Videos und Playlists direkt in die Jellyfin-Mediathek herunterladen.",
+        "imageUrl":  "https://raw.githubusercontent.com/b00namd/JellyTube/master/Jellyfin.Plugin.JellyTube/thumb.png"
+    }
+]

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8" />
+    <title>JellyTube</title>
+    <meta name="language" content="de" />
+</head>
+<body>
+    <div id="JellyTubeConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox,emby-textarea">
+    <style>
+        .yt-section {
+            margin-bottom: 2em;
+        }
+        .yt-section h2 {
+            border-bottom: 1px solid #444;
+            padding-bottom: 0.3em;
+        }
+        #yt-job-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #yt-job-table th,
+        #yt-job-table td {
+            padding: 0.4em 0.6em;
+            border: 1px solid #555;
+            font-size: 0.9em;
+            text-align: left;
+        }
+        .yt-progress-bar-wrap {
+            background: #333;
+            border-radius: 4px;
+            height: 12px;
+            min-width: 80px;
+        }
+        .yt-progress-bar-fill {
+            background: #00a4dc;
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.4s;
+        }
+        #yt-metadata-preview {
+            background: #1c1c1c;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 1em;
+            display: none;
+        }
+        #yt-metadata-preview img {
+            max-width: 120px;
+            max-height: 68px;
+            object-fit: cover;
+            float: left;
+            margin-right: 1em;
+            border-radius: 4px;
+        }
+        #yt-metadata-preview .yt-meta-info {
+            overflow: hidden;
+        }
+        .yt-status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .yt-status-Queued      { background: #555;    color: #ddd; }
+        .yt-status-FetchingMetadata { background: #3d5a8a; color: #fff; }
+        .yt-status-Downloading { background: #1a6b3c; color: #fff; }
+        .yt-status-WritingMetadata  { background: #6b4e1a; color: #fff; }
+        .yt-status-Completed   { background: #1e6b1e; color: #fff; }
+        .yt-status-Failed      { background: #8a1a1a; color: #fff; }
+        .yt-status-Cancelled   { background: #555;    color: #aaa; }
+        .yt-tools-bar {
+            display: flex;
+            gap: 1.5em;
+            padding: 0.6em 1em;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            margin-bottom: 1.5em;
+            font-size: 0.9em;
+            flex-wrap: wrap;
+        }
+        .yt-tool-item { display: flex; align-items: center; gap: 0.4em; }
+        .yt-tool-ok   { color: #4caf50; font-weight: bold; }
+        .yt-tool-err  { color: #f44336; font-weight: bold; }
+        .yt-input-row { display: flex; gap: 0.5em; align-items: flex-end; }
+        .yt-input-row > div { flex: 1; }
+        #yt-dir-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75); z-index: 9000;
+            align-items: center; justify-content: center;
+        }
+        #yt-dir-box {
+            background: #1c1c1c; border: 1px solid #555; border-radius: 8px;
+            padding: 1.2em; width: 90%; max-width: 520px; max-height: 80vh;
+            display: flex; flex-direction: column; gap: 0.8em;
+        }
+        #yt-dir-box h3 { margin: 0; font-size: 1em; }
+        #yt-dir-crumb {
+            background: #111; padding: 0.4em 0.7em; border-radius: 4px;
+            font-size: 0.82em; word-break: break-all; color: #aaa;
+        }
+        #yt-dir-list {
+            overflow-y: auto; flex: 1; min-height: 180px; max-height: 340px;
+            border: 1px solid #333; border-radius: 4px;
+        }
+        .yt-dir-item {
+            padding: 0.55em 1em; cursor: pointer; border-bottom: 1px solid #222;
+            font-size: 0.9em;
+        }
+        .yt-dir-item:hover { background: #2a2a2a; }
+        .yt-dir-item.yt-dir-up { color: #aaa; }
+        #yt-dir-actions { display: flex; gap: 0.5em; justify-content: flex-end; }
+
+    </style>
+
+        <div data-role="content">
+            <div class="content-primary">
+
+                <!-- ============================================================ -->
+                <!-- TOOLS STATUS -->
+                <!-- ============================================================ -->
+                <div class="yt-tools-bar" id="yt-tools-bar">
+                    <div class="yt-tool-item" id="yt-tool-ytdlp">&#8987; yt-dlp wird geprüft…</div>
+                    <div class="yt-tool-item" id="yt-tool-ffmpeg">&#8987; ffmpeg wird geprüft…</div>
+                </div>
+
+                <!-- ============================================================ -->
+                <!-- SETTINGS -->
+                <!-- ============================================================ -->
+                <div class="yt-section">
+                    <h2>Einstellungen</h2>
+                    <form id="yt-config-form">
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="DownloadPath">Download-Pfad</label>
+                            <div class="yt-input-row">
+                                <div>
+                                    <input id="DownloadPath" name="DownloadPath" type="text" is="emby-input"
+                                           placeholder="/media/youtube" />
+                                </div>
+                                <button id="yt-browse-btn" is="emby-button" type="button" class="raised">
+                                    Durchsuchen
+                                </button>
+                            </div>
+                            <div class="fieldDescription">Basisverzeichnis, in dem Videos gespeichert werden.</div>
+                        </div>
+
+                        <!-- Directory Browser Overlay -->
+                        <div id="yt-dir-overlay">
+                            <div id="yt-dir-box">
+                                <h3>Verzeichnis auswählen</h3>
+                                <div id="yt-dir-crumb">/</div>
+                                <div id="yt-dir-list"></div>
+                                <div id="yt-dir-actions">
+                                    <button id="yt-dir-select-btn" is="emby-button" type="button" class="raised button-submit">Auswählen</button>
+                                    <button id="yt-dir-cancel-btn" is="emby-button" type="button" class="raised">Abbrechen</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="YtDlpBinaryPath">yt-dlp Programmpfad (optional)</label>
+                            <input id="YtDlpBinaryPath" name="YtDlpBinaryPath" type="text" is="emby-input"
+                                   placeholder="z.B. /usr/local/bin/yt-dlp" />
+                            <div class="fieldDescription">Vollständiger Pfad zur yt-dlp-Binärdatei. Leer lassen, wenn yt-dlp im Systempfad (PATH) verfügbar ist.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="FfmpegBinaryPath">ffmpeg Programmpfad (optional)</label>
+                            <input id="FfmpegBinaryPath" name="FfmpegBinaryPath" type="text" is="emby-input"
+                                   placeholder="z.B. /usr/local/bin/ffmpeg" />
+                            <div class="fieldDescription">Vollständiger Pfad zur ffmpeg-Binärdatei. Wird zum Zusammenführen von Video und Audio benötigt. Leer lassen, wenn ffmpeg im Systempfad (PATH) verfügbar ist.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="VideoFormatPreset">Videoformat</label>
+                            <select id="VideoFormatPreset" is="emby-select">
+                                <option value="bestvideo[height&lt;=1080]+bestaudio/best[height&lt;=1080]">Beste Qualität bis 1080p (Standard)</option>
+                                <option value="bestvideo[height&lt;=720]+bestaudio/best[height&lt;=720]">Beste Qualität bis 720p</option>
+                                <option value="bestvideo[height&lt;=480]+bestaudio/best[height&lt;=480]">Beste Qualität bis 480p</option>
+                                <option value="bestvideo[height&lt;=2160]+bestaudio/best">Beste Qualität bis 4K</option>
+                                <option value="bestvideo+bestaudio/best">Beste verfügbare Qualität</option>
+                                <option value="bestaudio/best">Nur Audio (beste Qualität)</option>
+                                <option value="custom">Benutzerdefiniert…</option>
+                            </select>
+                        </div>
+                        <div class="inputContainer" id="VideoFormatCustomContainer" style="display:none;">
+                            <label class="inputLabel" for="VideoFormat">Benutzerdefinierter Format-String</label>
+                            <input id="VideoFormat" name="VideoFormat" type="text" is="emby-input"
+                                   placeholder="bestvideo[height&lt;=1080]+bestaudio/best" />
+                            <div class="fieldDescription">yt-dlp Format-String. Siehe <a href="https://github.com/yt-dlp/yt-dlp#format-selection" target="_blank">yt-dlp Dokumentation</a>.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="PreferredContainer">Bevorzugter Container</label>
+                            <select id="PreferredContainer" name="PreferredContainer" is="emby-select">
+                                <option value="mp4">MP4</option>
+                                <option value="mkv">MKV</option>
+                                <option value="webm">WebM</option>
+                            </select>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="MaxConcurrentDownloads">Maximale gleichzeitige Downloads</label>
+                            <input id="MaxConcurrentDownloads" name="MaxConcurrentDownloads" type="number"
+                                   is="emby-input" min="1" max="10" />
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="OrganiseByChannel" name="OrganiseByChannel" type="checkbox" is="emby-checkbox" />
+                                <span>Nach Kanal sortieren</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">Erstellt einen Unterordner pro Kanal im Download-Verzeichnis.</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="DownloadSubtitles" name="DownloadSubtitles" type="checkbox" is="emby-checkbox" />
+                                <span>Untertitel herunterladen</span>
+                            </label>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="SubtitleLanguages">Untertitelsprachen</label>
+                            <input id="SubtitleLanguages" name="SubtitleLanguages" type="text" is="emby-input"
+                                   placeholder="en,de" />
+                            <div class="fieldDescription">Kommagetrennte Sprachcodes.</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="WriteNfoFiles" name="WriteNfoFiles" type="checkbox" is="emby-checkbox" />
+                                <span>NFO-Metadatendateien schreiben</span>
+                            </label>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="DownloadThumbnails" name="DownloadThumbnails" type="checkbox" is="emby-checkbox" />
+                                <span>Vorschaubilder herunterladen</span>
+                            </label>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="TriggerLibraryScanAfterDownload" name="TriggerLibraryScanAfterDownload" type="checkbox" is="emby-checkbox" />
+                                <span>Bibliothek nach Download aktualisieren</span>
+                            </label>
+                        </div>
+
+                        <h3>Geplante Downloads</h3>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="EnableScheduledDownloads" name="EnableScheduledDownloads" type="checkbox" is="emby-checkbox" />
+                                <span>Geplante Playlist-Downloads aktivieren</span>
+                            </label>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="ScheduledPlaylistUrls">Playlist-/Kanal-URLs</label>
+                            <textarea id="ScheduledPlaylistUrls" name="ScheduledPlaylistUrls"
+                                      style="width:100%;min-height:120px;box-sizing:border-box;background:#1c1c1c;color:#fff;border:1px solid #444;border-radius:4px;padding:0.5em;font-size:0.95em;resize:vertical;"
+                                      placeholder="Eine URL pro Zeile"></textarea>
+                            <div class="fieldDescription">Diese Playlists werden bei jedem geplanten Task-Lauf geprüft.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="PlaylistMaxAgeDays">Maximales Videoalter (Tage)</label>
+                            <input id="PlaylistMaxAgeDays" name="PlaylistMaxAgeDays" type="number"
+                                   is="emby-input" min="0" />
+                            <div class="fieldDescription">Videos aus Playlists überspringen, die älter als diese Anzahl Tage sind. 0 = kein Limit.</div>
+                        </div>
+
+                        <div>
+                            <button id="yt-save-btn" is="emby-button" type="button" class="raised button-submit block">
+                                Einstellungen speichern
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ============================================================ -->
+                <!-- DOWNLOAD -->
+                <!-- ============================================================ -->
+                <div class="yt-section">
+                    <h2>Video oder Playlist herunterladen</h2>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="yt-url-input">YouTube-URL</label>
+                        <input id="yt-url-input" type="text" is="emby-input"
+                               placeholder="https://www.youtube.com/watch?v=..." />
+                    </div>
+
+                    <div class="checkboxContainer">
+                        <label class="emby-checkbox-label">
+                            <input id="yt-is-playlist" type="checkbox" is="emby-checkbox" />
+                            <span>Dies ist eine Playlist / ein Kanal</span>
+                        </label>
+                    </div>
+
+                    <div style="margin-bottom:1em;">
+                        <button id="yt-fetch-meta-btn" is="emby-button" type="button" class="raised">
+                            Metadaten vorschau
+                        </button>
+                        &nbsp;
+                        <button id="yt-download-btn" is="emby-button" type="button" class="raised button-submit">
+                            In Warteschlange
+                        </button>
+                    </div>
+
+                    <div id="yt-metadata-preview">
+                        <img id="yt-meta-thumb" src="" alt="thumbnail" />
+                        <div class="yt-meta-info">
+                            <strong id="yt-meta-title"></strong><br />
+                            <span id="yt-meta-channel"></span><br />
+                            <span id="yt-meta-date"></span> &nbsp;|&nbsp; <span id="yt-meta-duration"></span>
+                            <p id="yt-meta-desc" style="max-height:80px;overflow:hidden;font-size:0.85em;"></p>
+                        </div>
+                        <div style="clear:both;"></div>
+                    </div>
+                </div>
+
+                <!-- ============================================================ -->
+                <!-- JOB LIST -->
+                <!-- ============================================================ -->
+                <div class="yt-section">
+                    <h2>Download-Warteschlange</h2>
+                    <div id="yt-queue-stats" style="margin-bottom:0.5em;font-size:0.9em;"></div>
+                    <button id="yt-refresh-btn" is="emby-button" type="button" class="raised">
+                        Aktualisieren
+                    </button>
+                    <div style="overflow-x:auto;margin-top:0.8em;">
+                        <table id="yt-job-table">
+                            <thead>
+                                <tr>
+                                    <th>Titel / URL</th>
+                                    <th>Status</th>
+                                    <th>Fortschritt</th>
+                                    <th>Hinzugefügt</th>
+                                    <th>Aktion</th>
+                                </tr>
+                            </thead>
+                            <tbody id="yt-job-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div><!-- /.content-primary -->
+        </div><!-- /[data-role=content] -->
+
+        <script src="/api/jellytube/ui"></script>
+    </div><!-- /#JellyTubeConfigPage -->
+</body>
+</html>
