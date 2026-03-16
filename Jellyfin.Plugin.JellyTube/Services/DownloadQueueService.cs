@@ -58,10 +58,35 @@ public class DownloadQueueService
     public void Cancel(Guid id)
     {
         if (_jobs.TryGetValue(id, out var job)
-            && job.Status is DownloadJobStatus.Queued or DownloadJobStatus.FetchingMetadata)
+            && job.Status is DownloadJobStatus.Queued
+                          or DownloadJobStatus.FetchingMetadata
+                          or DownloadJobStatus.Downloading
+                          or DownloadJobStatus.WritingMetadata)
         {
             job.Status = DownloadJobStatus.Cancelled;
+            job.CompletedAt = DateTime.UtcNow;
         }
+    }
+
+    /// <summary>
+    /// Marks all currently active jobs (not yet completed/failed/cancelled) as cancelled.
+    /// </summary>
+    public int CancelAllActive()
+    {
+        int count = 0;
+        foreach (var job in _jobs.Values)
+        {
+            if (job.Status is DownloadJobStatus.Queued
+                           or DownloadJobStatus.FetchingMetadata
+                           or DownloadJobStatus.Downloading
+                           or DownloadJobStatus.WritingMetadata)
+            {
+                job.Status = DownloadJobStatus.Cancelled;
+                job.CompletedAt = DateTime.UtcNow;
+                count++;
+            }
+        }
+        return count;
     }
 
     /// <summary>

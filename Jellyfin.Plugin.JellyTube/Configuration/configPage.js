@@ -347,7 +347,8 @@
             }
 
             var actionHtml = '';
-            if (job.Status === 'Queued') {
+            var isActive = ['Queued','FetchingMetadata','Downloading','WritingMetadata'].indexOf(job.Status) >= 0;
+            if (isActive) {
                 actionHtml = '<button is="emby-button" data-id="' + job.Id + '" class="yt-cancel-btn raised" style="font-size:0.8em;padding:2px 8px;">Abbrechen</button>';
             }
 
@@ -461,6 +462,17 @@
         document.getElementById('yt-fetch-meta-btn').addEventListener('click', fetchMetadata);
         document.getElementById('yt-download-btn').addEventListener('click', enqueueDownload);
         document.getElementById('yt-refresh-btn').addEventListener('click', refreshJobs);
+
+        document.getElementById('yt-cancel-all-btn').addEventListener('click', function () {
+            if (!confirm('Alle aktiven und wartenden Jobs wirklich abbrechen?')) return;
+            fetch(API_BASE + '/jobs', { method: 'DELETE', headers: apiHeaders() })
+                .then(function (r) { return r.ok ? r.json() : Promise.reject(r.statusText); })
+                .then(function (count) {
+                    showToast(count + ' Job(s) abgebrochen.');
+                    refreshJobs();
+                })
+                .catch(function (err) { showToast('Fehler: ' + err); });
+        });
 
         pollTimer = setInterval(refreshJobs, 5000);
 

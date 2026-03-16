@@ -203,6 +203,17 @@ public class JellyTubeController : ControllerBase
     }
 
     /// <summary>
+    /// Cancels all active (queued or in-progress) jobs.
+    /// </summary>
+    [HttpDelete("jobs")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult<int> CancelAllJobs()
+    {
+        var count = _queue.CancelAllActive();
+        return Ok(count);
+    }
+
+    /// <summary>
     /// Clears the download archive so all scheduled playlist videos can be re-downloaded.
     /// </summary>
     [HttpDelete("archive")]
