@@ -170,7 +170,8 @@ public class YtDlpService
             WriteSubs = config.DownloadSubtitles,
             SubLangs = config.DownloadSubtitles ? config.SubtitleLanguages : null,
             RestrictFilenames = true,
-            NoPlaylist = !playlist
+            NoPlaylist = !playlist,
+            WriteInfoJson = playlist   // write per-video .info.json so metadata can be read back for all items
         };
 
         // Per-entry maxAgeDays takes priority; fall back to global setting

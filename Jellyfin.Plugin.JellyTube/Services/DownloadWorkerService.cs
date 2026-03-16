@@ -1,6 +1,8 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.JellyTube.Models;
@@ -133,29 +135,37 @@ public class DownloadWorkerService : BackgroundService
 
         if (config.WriteNfoFiles || config.DownloadThumbnails)
         {
-            var videoFile = LocateDownloadedFile(outputDir, meta.VideoId);
-
-            if (videoFile is not null)
+            if (job.IsPlaylist)
             {
-                job.DownloadedFilePath = videoFile;
-
-                if (config.WriteNfoFiles)
-                {
-                    var nfoPath = LibraryOrganizationService.GetNfoPath(videoFile);
-                    await _nfo.WriteNfoAsync(meta, nfoPath);
-                }
-
-                if (config.DownloadThumbnails && !string.IsNullOrEmpty(meta.ThumbnailUrl))
-                {
-                    var thumbPath = LibraryOrganizationService.GetThumbnailPath(videoFile);
-                    await _thumbs.DownloadThumbnailAsync(meta.ThumbnailUrl, thumbPath, ct);
-                    await _thumbs.EnsureChannelPosterAsync(outputDir, meta.ThumbnailUrl, ct);
-                }
+                // For playlists yt-dlp writes a .info.json per video — parse each to build full NFO/thumbnails
+                await WritePlaylistMetadataAsync(outputDir, ct);
             }
             else
             {
-                _logger.LogWarning("Job {Id}: downloaded file not found in {Dir} for video {VideoId}.",
-                    job.Id, outputDir, meta.VideoId);
+                var videoFile = LocateDownloadedFile(outputDir, meta.VideoId);
+
+                if (videoFile is not null)
+                {
+                    job.DownloadedFilePath = videoFile;
+
+                    if (config.WriteNfoFiles)
+                    {
+                        var nfoPath = LibraryOrganizationService.GetNfoPath(videoFile);
+                        await _nfo.WriteNfoAsync(meta, nfoPath);
+                    }
+
+                    if (config.DownloadThumbnails && !string.IsNullOrEmpty(meta.ThumbnailUrl))
+                    {
+                        var thumbPath = LibraryOrganizationService.GetThumbnailPath(videoFile);
+                        await _thumbs.DownloadThumbnailAsync(meta.ThumbnailUrl, thumbPath, ct);
+                        await _thumbs.EnsureChannelPosterAsync(outputDir, meta.ThumbnailUrl, ct);
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Job {Id}: downloaded file not found in {Dir} for video {VideoId}.",
+                        job.Id, outputDir, meta.VideoId);
+                }
             }
         }
 
@@ -167,6 +177,86 @@ public class DownloadWorkerService : BackgroundService
         if (config.TriggerLibraryScanAfterDownload)
         {
             _libraryManager.QueueLibraryScan();
+        }
+    }
+
+    private async Task WritePlaylistMetadataAsync(string outputDir, CancellationToken ct)
+    {
+        var config = Plugin.Instance!.Configuration;
+        string? lastThumbnailUrl = null;
+
+        foreach (var jsonPath in Directory.EnumerateFiles(outputDir, "*.info.json"))
+        {
+            var videoMeta = await ParseInfoJsonAsync(jsonPath, ct);
+            if (videoMeta is null || string.IsNullOrEmpty(videoMeta.VideoId))
+                continue;
+
+            var videoFile = LocateDownloadedFile(outputDir, videoMeta.VideoId);
+            if (videoFile is null)
+                continue;
+
+            if (config.WriteNfoFiles)
+            {
+                var nfoPath = LibraryOrganizationService.GetNfoPath(videoFile);
+                await _nfo.WriteNfoAsync(videoMeta, nfoPath);
+            }
+
+            if (config.DownloadThumbnails && !string.IsNullOrEmpty(videoMeta.ThumbnailUrl))
+            {
+                var thumbPath = LibraryOrganizationService.GetThumbnailPath(videoFile);
+                if (!File.Exists(thumbPath))
+                    await _thumbs.DownloadThumbnailAsync(videoMeta.ThumbnailUrl, thumbPath, ct);
+                lastThumbnailUrl = videoMeta.ThumbnailUrl;
+            }
+        }
+
+        if (config.DownloadThumbnails && lastThumbnailUrl is not null)
+            await _thumbs.EnsureChannelPosterAsync(outputDir, lastThumbnailUrl, ct);
+    }
+
+    private static async Task<VideoMetadata?> ParseInfoJsonAsync(string jsonPath, CancellationToken ct)
+    {
+        try
+        {
+            await using var stream = File.OpenRead(jsonPath);
+            using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+            var root = doc.RootElement;
+
+            string? Str(string key) =>
+                root.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+
+            DateTime? uploadDate = null;
+            var udStr = Str("upload_date");
+            if (udStr?.Length == 8 &&
+                DateTime.TryParseExact(udStr, "yyyyMMdd", CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out var ud))
+                uploadDate = ud;
+
+            return new VideoMetadata
+            {
+                VideoId         = Str("id") ?? string.Empty,
+                Title           = Str("title") ?? string.Empty,
+                Description     = Str("description") ?? string.Empty,
+                ChannelName     = Str("channel") ?? Str("uploader") ?? string.Empty,
+                ChannelId       = Str("channel_id") ?? string.Empty,
+                UploaderUrl     = Str("uploader_url") ?? string.Empty,
+                UploadDate      = uploadDate,
+                DurationSeconds = root.TryGetProperty("duration", out var dur) && dur.ValueKind == JsonValueKind.Number ? dur.GetDouble() : null,
+                ViewCount       = root.TryGetProperty("view_count", out var vc) && vc.ValueKind == JsonValueKind.Number ? vc.GetInt64() : null,
+                LikeCount       = root.TryGetProperty("like_count", out var lc) && lc.ValueKind == JsonValueKind.Number ? lc.GetInt64() : null,
+                ThumbnailUrl    = Str("thumbnail") ?? string.Empty,
+                WebpageUrl      = Str("webpage_url") ?? string.Empty,
+                Tags            = root.TryGetProperty("tags", out var tags) && tags.ValueKind == JsonValueKind.Array
+                    ? tags.EnumerateArray().Select(t => t.GetString() ?? string.Empty).Where(s => s.Length > 0).ToArray()
+                    : Array.Empty<string>(),
+                Categories      = root.TryGetProperty("categories", out var cats) && cats.ValueKind == JsonValueKind.Array
+                    ? cats.EnumerateArray().Select(c => c.GetString() ?? string.Empty).Where(s => s.Length > 0).ToArray()
+                    : Array.Empty<string>()
+            };
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 
