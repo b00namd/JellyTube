@@ -71,9 +71,9 @@
         .yt-status-Failed      { background: #8a1a1a; color: #fff; }
         .yt-status-Cancelled   { background: #555;    color: #aaa; }
         .yt-tools-bar {
-            display: flex;
+            display: inline-flex;
             gap: 1.5em;
-            padding: 0.6em 1em;
+            padding: 0.5em 1em;
             background: #1a1a1a;
             border: 1px solid #333;
             border-radius: 6px;
@@ -148,7 +148,7 @@
 
                         <div class="inputContainer">
                             <label class="inputLabel" for="DownloadPath">Download-Pfad</label>
-                            <div class="yt-input-row">
+                            <div class="yt-input-row" style="max-width:500px;">
                                 <div>
                                     <input id="DownloadPath" name="DownloadPath" type="text" is="emby-input"
                                            placeholder="/media/youtube" />
@@ -176,14 +176,14 @@
                         <div class="inputContainer">
                             <label class="inputLabel" for="YtDlpBinaryPath">yt-dlp Programmpfad (optional)</label>
                             <input id="YtDlpBinaryPath" name="YtDlpBinaryPath" type="text" is="emby-input"
-                                   placeholder="z.B. /usr/local/bin/yt-dlp" />
+                                   placeholder="z.B. /usr/local/bin/yt-dlp" style="max-width:500px;" />
                             <div class="fieldDescription">Vollständiger Pfad zur yt-dlp-Binärdatei. Leer lassen, wenn yt-dlp im Systempfad (PATH) verfügbar ist.</div>
                         </div>
 
                         <div class="inputContainer">
                             <label class="inputLabel" for="FfmpegBinaryPath">ffmpeg Programmpfad (optional)</label>
                             <input id="FfmpegBinaryPath" name="FfmpegBinaryPath" type="text" is="emby-input"
-                                   placeholder="z.B. /usr/local/bin/ffmpeg" />
+                                   placeholder="z.B. /usr/local/bin/ffmpeg" style="max-width:500px;" />
                             <div class="fieldDescription">Vollständiger Pfad zur ffmpeg-Binärdatei. Wird zum Zusammenführen von Video und Audio benötigt. Leer lassen, wenn ffmpeg im Systempfad (PATH) verfügbar ist.</div>
                         </div>
 
@@ -322,7 +322,7 @@
                     <div class="inputContainer">
                         <label class="inputLabel" for="yt-url-input">YouTube-URL</label>
                         <input id="yt-url-input" type="text" is="emby-input"
-                               placeholder="https://www.youtube.com/watch?v=..." />
+                               placeholder="https://www.youtube.com/watch?v=..." style="max-width:500px;" />
                     </div>
 
                     <div class="checkboxContainer">
@@ -334,7 +334,7 @@
 
                     <div class="inputContainer">
                         <label class="inputLabel" for="yt-dl-path">Zielverzeichnis (optional)</label>
-                        <div class="yt-input-row">
+                        <div class="yt-input-row" style="max-width:500px;">
                             <div>
                                 <input id="yt-dl-path" type="text" is="emby-input"
                                        placeholder="Leer = Basisverzeichnis" />
