@@ -96,7 +96,7 @@ In Jellyfin:
 
 Repository-URL:
 ```
-https://raw.githubusercontent.com/b00namd/JellyTube/master/dist/manifest.json
+https://raw.githubusercontent.com/b00namd/JellyYT/master/dist/manifest.json
 ```
 
 ### 2. Plugins installieren
