@@ -179,7 +179,9 @@ public class YtDlpService
         if (playlist && effectiveMaxAge > 0)
         {
             opts.DateAfter = DateTime.UtcNow.AddDays(-effectiveMaxAge);
+#pragma warning disable CS0618 // BreakOnReject: deprecated in favour of --break-match-filter; no relative-date support in match-filter syntax
             opts.BreakOnReject = true; // stop at first video older than the date limit (channel is newest-first)
+#pragma warning restore CS0618
         }
 
         // Embed audio language tag via ffmpeg post-processor
