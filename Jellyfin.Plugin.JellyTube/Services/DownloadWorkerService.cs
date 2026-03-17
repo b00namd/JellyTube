@@ -94,6 +94,8 @@ public class DownloadWorkerService : BackgroundService
     {
         _logger.LogInformation("Processing job {Id}: {Url}", job.Id, job.Url);
 
+        job.StartedAt = DateTime.UtcNow;
+
         // Step 1 – fetch metadata
         job.Status = DownloadJobStatus.FetchingMetadata;
         var meta = await _ytDlp.FetchMetadataAsync(job.Url, ct);

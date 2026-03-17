@@ -31,6 +31,9 @@ public class DownloadJob
     /// <summary>Gets the time this job was created.</summary>
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 
+    /// <summary>Gets or sets the time this job started processing (left the queue).</summary>
+    public DateTime? StartedAt { get; set; }
+
     /// <summary>Gets or sets the time this job completed (or failed).</summary>
     public DateTime? CompletedAt { get; set; }
 
