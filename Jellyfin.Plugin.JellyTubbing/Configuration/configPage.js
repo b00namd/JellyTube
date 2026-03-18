@@ -47,6 +47,7 @@
             ApiClient.updatePluginConfiguration(PLUGIN_ID, config).then(function () {
                 showToast('Einstellungen gespeichert.');
                 checkInvidious();
+                checkYtDlp();
             });
         });
     }
@@ -55,20 +56,42 @@
     // Invidious status check
     // -----------------------------------------------------------------------
     function checkInvidious() {
-        var bar = document.getElementById('jt-invidious-status');
-        bar.innerHTML = '<span class="jt-info">&#8987; Prüfe Invidious-Verbindung…</span>';
+        var el = document.getElementById('jt-invidious-status');
+        el.innerHTML = '<span class="jt-info">&#8987; Prüfe Invidious-Verbindung…</span>';
 
         fetch(API_BASE + '/test-invidious', { headers: apiHeaders() })
             .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
             .then(function (data) {
                 if (data.reachable) {
-                    bar.innerHTML = '<span class="jt-ok">&#10003;</span> Invidious erreichbar: ' + (data.message || '');
+                    el.innerHTML = '<span class="jt-ok">&#10003;</span> Invidious erreichbar: ' + (data.message || '');
                 } else {
-                    bar.innerHTML = '<span class="jt-err">&#10007;</span> ' + (data.message || 'Invidious nicht erreichbar');
+                    el.innerHTML = '<span class="jt-err">&#10007;</span> ' + (data.message || 'Invidious nicht erreichbar');
                 }
             })
             .catch(function () {
-                bar.innerHTML = '<span class="jt-err">&#10007;</span> Verbindungsfehler';
+                el.innerHTML = '<span class="jt-err">&#10007;</span> Verbindungsfehler';
+            });
+    }
+
+    // -----------------------------------------------------------------------
+    // yt-dlp status check
+    // -----------------------------------------------------------------------
+    function checkYtDlp() {
+        var el = document.getElementById('jt-ytdlp-status');
+        el.innerHTML = '<span class="jt-info">&#8987; yt-dlp wird geprüft…</span>';
+
+        fetch(API_BASE + '/check-tools', { headers: apiHeaders() })
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+            .then(function (data) {
+                if (data.ytDlpAvailable) {
+                    el.innerHTML = '<span class="jt-ok">&#10003;</span> yt-dlp ' + (data.ytDlpVersion || '');
+                } else {
+                    el.innerHTML = '<span class="jt-err">&#10007;</span> yt-dlp nicht gefunden' +
+                        (data.ytDlpError ? ' (' + data.ytDlpError + ')' : '');
+                }
+            })
+            .catch(function () {
+                el.innerHTML = '<span class="jt-err">&#10007;</span> Fehler';
             });
     }
 
@@ -76,9 +99,13 @@
     // Init
     // -----------------------------------------------------------------------
     document.getElementById('jt-save-btn').addEventListener('click', saveConfig);
-    document.getElementById('jt-test-btn').addEventListener('click', checkInvidious);
+    document.getElementById('jt-test-btn').addEventListener('click', function () {
+        checkInvidious();
+        checkYtDlp();
+    });
 
     loadConfig();
     checkInvidious();
+    checkYtDlp();
 
 }());

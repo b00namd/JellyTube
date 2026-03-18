@@ -117,16 +117,28 @@ Wer Jellyfin und Invidious noch nicht betreibt, kann mit dieser Vorlage beide Di
 services:
 
   jellyfin:
-    image: jellyfin/jellyfin:latest
+    image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
     restart: unless-stopped
-    network_mode: host          # einfachster Weg für DLNA / direkte Netzwerksuche
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Berlin
     volumes:
       - ./jellyfin/config:/config
-      - ./jellyfin/cache:/cache
-      - ./media:/media          # Hier landen die JellyTube-Downloads
-    environment:
-      - TZ=Europe/Berlin
+      - /media:/media                              # Mediathek / JellyTube-Downloads
+      - /usr/local/bin/yt-dlp:/usr/local/bin/yt-dlp:ro   # yt-dlp auf dem Host
+      - /usr/local/bin/ffmpeg:/usr/local/bin/ffmpeg:ro    # ffmpeg auf dem Host
+    ports:
+      - "8096:8096"
+    # GPU-Transcoding (optional, nur wenn eine NVIDIA-Karte vorhanden ist):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu, video, compute, utility]
 
   invidious:
     image: quay.io/invidious/invidious:latest
@@ -138,41 +150,68 @@ services:
       INVIDIOUS_CONFIG: |
         db:
           dbname: invidious
-          user: invidious
-          password: invidious
+          user: kemal
+          password: kemal
           host: invidious-db
           port: 5432
         check_tables: true
-        external_port: 3000
-        domain: ""
-        https_only: false
-        statistics_enabled: false
+        hmac_key: "HIER_EINEN_LANGEN_ZUFAELLIGEN_STRING_EINTRAGEN"
+        invidious_companion_key: "COMPANION_SECRET_HIER_EINTRAGEN"
+        invidious_companion:
+          - private_url: "http://companion:8282/companion"
     depends_on:
       - invidious-db
+      - companion
+
+  companion:
+    image: quay.io/invidious/invidious-companion:latest
+    container_name: companion
+    restart: unless-stopped
+    environment:
+      - SERVER_SECRET_KEY=COMPANION_SECRET_HIER_EINTRAGEN   # muss mit invidious_companion_key übereinstimmen
+    volumes:
+      - companion-cache:/var/tmp/youtubei.js:rw
+    cap_drop:
+      - ALL
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
 
   invidious-db:
     image: docker.io/library/postgres:14
     container_name: invidious-db
     restart: unless-stopped
     volumes:
-      - ./invidious/db:/var/lib/postgresql/data
+      - invidious-db-data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: invidious
-      POSTGRES_USER: invidious
-      POSTGRES_PASSWORD: invidious
+      POSTGRES_USER: kemal
+      POSTGRES_PASSWORD: kemal
+
+volumes:
+  invidious-db-data:
+  companion-cache:
 ```
+
+> **Vor dem Start anpassen:**
+> - `hmac_key` und `invidious_companion_key` / `SERVER_SECRET_KEY` durch eigene, zufällige Strings ersetzen (beide Werte müssen übereinstimmen)
+> - Pfade für `yt-dlp` und `ffmpeg` an die tatsächlichen Installationsorte auf dem Host anpassen
+> - `TZ` auf die eigene Zeitzone setzen
 
 **Starten:**
 ```bash
 docker compose up -d
 ```
 
-- Jellyfin ist danach unter `http://<server-ip>:8096` erreichbar
-- Invidious läuft unter `http://<server-ip>:3000`
-- In den JellyTubbing-Einstellungen als Invidious-URL `http://invidious:3000` eintragen (Container-interner Name)
-  oder `http://<server-ip>:3000` wenn Jellyfin mit `network_mode: host` läuft
+**Dienste:**
+| Dienst | URL |
+|---|---|
+| Jellyfin | `http://<server-ip>:8096` |
+| Invidious | `http://<server-ip>:3000` |
 
-> **yt-dlp und ffmpeg** sind in den offiziellen Jellyfin-Images bereits enthalten und müssen nicht separat installiert werden. Die Felder in den Plugin-Einstellungen können leer bleiben.
+**JellyTubbing-Einstellung – Invidious-URL:**
+- `http://invidious:3000` – wenn Jellyfin im selben Docker-Netzwerk läuft
+- `http://<server-ip>:3000` – wenn von außen erreichbar sein soll
 
 ---
 

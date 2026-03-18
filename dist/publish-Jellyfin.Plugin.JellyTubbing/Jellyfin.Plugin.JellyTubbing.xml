@@ -24,6 +24,11 @@
             Tests whether the configured Invidious instance is reachable.
             </summary>
         </member>
+        <member name="M:Jellyfin.Plugin.JellyTubbing.Api.JellyTubbingController.CheckTools">
+            <summary>
+            Checks whether yt-dlp is available on the server.
+            </summary>
+        </member>
         <member name="T:Jellyfin.Plugin.JellyTubbing.Channel.JellyTubbingChannel">
             <summary>
             Jellyfin channel that streams YouTube videos via Invidious (with yt-dlp fallback).

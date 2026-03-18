@@ -1,3 +1,5 @@
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -57,5 +59,46 @@ public class JellyTubbingController : ControllerBase
 
         var ok = await _invidious.IsReachableAsync(ct);
         return Ok(new { reachable = ok, message = ok ? url : $"Nicht erreichbar: {url}" });
+    }
+
+    /// <summary>
+    /// Checks whether yt-dlp is available on the server.
+    /// </summary>
+    [HttpGet("check-tools")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CheckTools()
+    {
+        var bin = Plugin.Instance?.Configuration.YtDlpBinaryPath;
+        if (string.IsNullOrWhiteSpace(bin)) bin = "yt-dlp";
+
+        var (available, version, error) = await TryGetVersionAsync(bin, "--version");
+        return Ok(new { ytDlpAvailable = available, ytDlpVersion = version, ytDlpError = error });
+    }
+
+    private static async Task<(bool Available, string? Version, string? Error)> TryGetVersionAsync(string binary, string args)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo(binary, args)
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError  = true,
+                UseShellExecute        = false,
+                CreateNoWindow         = true
+            };
+            using var proc = Process.Start(psi);
+            if (proc is null) return (false, null, "Process.Start returned null");
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var stdout = await proc.StandardOutput.ReadToEndAsync(cts.Token);
+            await proc.WaitForExitAsync(cts.Token);
+
+            var version = stdout.Split('\n')[0].Trim();
+            return (true, version, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, null, ex.Message);
+        }
     }
 }
