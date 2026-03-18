@@ -326,15 +326,27 @@
     });
 
     document.getElementById('jt-browse-btn').addEventListener('click', function () {
+        if (typeof require !== 'function') {
+            alert('Ordnerbrowser nicht verfuegbar. Bitte Pfad manuell eingeben.');
+            return;
+        }
         require(['directorybrowser'], function (DirectoryBrowser) {
-            var picker = new DirectoryBrowser();
-            picker.show({
-                callback: function (path) {
-                    if (path) document.getElementById('StrmOutputPath').value = path;
-                },
-                includeFiles: false,
-                header: 'STRM-Ausgabeordner waehlen'
-            });
+            try {
+                var picker = new DirectoryBrowser();
+                picker.show({
+                    callback: function (path) {
+                        if (path) document.getElementById('StrmOutputPath').value = path;
+                    },
+                    includeFiles: false,
+                    header: 'STRM-Ausgabeordner waehlen'
+                });
+            } catch (e) {
+                console.error('directorybrowser error:', e);
+                alert('Ordnerbrowser Fehler: ' + e.message + '\nBitte Pfad manuell eingeben.');
+            }
+        }, function (err) {
+            console.error('directorybrowser load error:', err);
+            alert('Ordnerbrowser konnte nicht geladen werden. Bitte Pfad manuell eingeben.');
         });
     });
 
