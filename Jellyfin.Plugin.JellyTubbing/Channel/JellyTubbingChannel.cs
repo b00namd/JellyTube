@@ -30,7 +30,7 @@ public class JellyTubbingChannel : IChannel
     }
 
     /// <inheritdoc />
-    public string Name => "JellyTubbing";
+    public string Name => "JellyTrending";
 
     /// <inheritdoc />
     public string Description => "YouTube-Trending direkt in Jellyfin.";
