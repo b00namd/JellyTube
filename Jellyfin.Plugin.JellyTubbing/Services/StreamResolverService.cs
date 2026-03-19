@@ -11,7 +11,8 @@ using Microsoft.Extensions.Logging;
 namespace Jellyfin.Plugin.JellyTubbing.Services;
 
 /// <summary>
-/// Resolves a YouTube video ID to a direct stream URL via yt-dlp.
+/// Resolves a YouTube video ID to direct stream URL(s) via yt-dlp.
+/// For 1080p+, yt-dlp returns separate video and audio URLs (DASH).
 /// Resolved URLs are cached for 4 hours so repeated playback starts instantly.
 /// </summary>
 public class StreamResolverService
@@ -19,7 +20,8 @@ public class StreamResolverService
     // YouTube CDN URLs are valid for ~6 hours; cache for 4 h to be safe
     private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(4);
 
-    private static readonly ConcurrentDictionary<string, (string Url, DateTime Expiry)> _cache = new();
+    // Value: (videoUrl, audioUrl or null for combined streams, expiry)
+    private static readonly ConcurrentDictionary<string, (string Video, string? Audio, DateTime Expiry)> _cache = new();
 
     private readonly ILogger<StreamResolverService> _logger;
 
@@ -34,11 +36,11 @@ public class StreamResolverService
     /// <summary>Resolves a YouTube video ID to a <see cref="MediaSourceInfo"/> via yt-dlp.</summary>
     public async Task<IEnumerable<MediaSourceInfo>> ResolveAsync(string videoId, CancellationToken ct)
     {
-        var streamUrl = await ResolveUrlAsync(videoId, ct);
-        if (!string.IsNullOrEmpty(streamUrl))
+        var (videoUrl, _) = await ResolveUrlsAsync(videoId, ct);
+        if (!string.IsNullOrEmpty(videoUrl))
         {
             _logger.LogInformation("Resolved stream for {VideoId}.", videoId);
-            return new[] { BuildSource(videoId, streamUrl) };
+            return new[] { BuildSource(videoId, videoUrl) };
         }
 
         _logger.LogWarning("Could not resolve stream for {VideoId}.", videoId);
@@ -46,44 +48,41 @@ public class StreamResolverService
     }
 
     /// <summary>
-    /// Returns a cached or freshly resolved direct stream URL for the given video ID.
+    /// Returns cached or freshly resolved stream URLs.
+    /// For combined streams: Audio is null. For DASH (1080p+): both Video and Audio are set.
     /// </summary>
-    public async Task<string?> ResolveUrlAsync(string videoId, CancellationToken ct)
+    public async Task<(string? Video, string? Audio)> ResolveUrlsAsync(string videoId, CancellationToken ct)
     {
-        // Serve from cache if still valid
         if (_cache.TryGetValue(videoId, out var cached) && DateTime.UtcNow < cached.Expiry)
         {
             _logger.LogDebug("Cache hit for {VideoId}.", videoId);
-            return cached.Url;
+            return (cached.Video, cached.Audio);
         }
 
-        var url = await ResolveViaYtDlpAsync(videoId, ct);
+        var (video, audio) = await ResolveViaYtDlpAsync(videoId, ct);
 
-        if (!string.IsNullOrEmpty(url))
+        if (!string.IsNullOrEmpty(video))
         {
-            _cache[videoId] = (url, DateTime.UtcNow.Add(CacheTtl));
+            _cache[videoId] = (video, audio, DateTime.UtcNow.Add(CacheTtl));
             PruneCache();
         }
 
-        return url;
+        return (video, audio);
     }
 
     // -------------------------------------------------------------------------
 
-    private async Task<string?> ResolveViaYtDlpAsync(string videoId, CancellationToken ct)
+    private async Task<(string? Video, string? Audio)> ResolveViaYtDlpAsync(string videoId, CancellationToken ct)
     {
         var config = Plugin.Instance!.Configuration;
         var binary = string.IsNullOrWhiteSpace(config.YtDlpBinaryPath) ? "yt-dlp" : config.YtDlpBinaryPath;
         var height = ParseHeight(config.PreferredQuality ?? "720p");
 
-        // Select the best combined (muxed) stream that contains both video and audio.
-        // YouTube only offers combined streams up to ~720p; higher resolutions use
-        // separate DASH streams (video+audio) which cannot be served via a single redirect.
-        // Fallback chain: mp4 with audio → any container with audio → best available.
-        var format = $"best[height<={height}][vcodec!=none][acodec!=none][ext=mp4]" +
+        // Try DASH first (separate video+audio → best quality), fall back to combined.
+        // yt-dlp -g prints one URL for combined, two lines for DASH (video then audio).
+        var format = $"bestvideo[height<={height}][ext=mp4]+bestaudio[ext=m4a]" +
+                     $"/bestvideo[height<={height}]+bestaudio" +
                      $"/best[height<={height}][vcodec!=none][acodec!=none]" +
-                     $"/best[vcodec!=none][acodec!=none][ext=mp4]" +
-                     $"/best[vcodec!=none][acodec!=none]" +
                      $"/best";
 
         var ytUrl = $"https://www.youtube.com/watch?v={videoId}";
@@ -95,8 +94,7 @@ public class StreamResolverService
                 StartInfo = new ProcessStartInfo
                 {
                     FileName  = binary,
-                    Arguments = $"-g --no-warnings --no-playlist" +
-                                $" --format \"{format}\" -- {ytUrl}",
+                    Arguments = $"-g --no-warnings --no-playlist --format \"{format}\" -- {ytUrl}",
                     RedirectStandardOutput = true,
                     RedirectStandardError  = true,
                     UseShellExecute        = false,
@@ -111,14 +109,18 @@ public class StreamResolverService
             var output = await proc.StandardOutput.ReadToEndAsync(cts.Token);
             await proc.WaitForExitAsync(cts.Token);
 
-            // yt-dlp -g returns one URL per line; take the first (video stream)
-            var url = output.Split('\n')[0].Trim();
-            return string.IsNullOrEmpty(url) ? null : url;
+            var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (lines.Length == 0) return (null, null);
+
+            // Two lines = DASH (video URL + audio URL), one line = combined
+            return lines.Length >= 2
+                ? (lines[0], lines[1])
+                : (lines[0], null);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "yt-dlp stream resolution failed for {VideoId}", videoId);
-            return null;
+            return (null, null);
         }
     }
 

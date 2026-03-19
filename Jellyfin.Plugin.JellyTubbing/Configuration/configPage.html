@@ -193,6 +193,15 @@
                     <div class="fieldDescription">Leer lassen, wenn yt-dlp im PATH liegt.</div>
                 </div>
                 <div class="inputContainer">
+                    <label class="inputLabel" for="FfmpegBinaryPath">ffmpeg Programmpfad (optional)</label>
+                    <input id="FfmpegBinaryPath" type="text" is="emby-input" style="max-width:500px;"
+                           placeholder="/usr/lib/jellyfin-ffmpeg/ffmpeg" />
+                    <div class="fieldDescription">
+                        Nur fuer 1080p/4K-Streaming benoetigt (DASH-Merge). Leer lassen, wenn ffmpeg im PATH liegt.
+                        Jellyfin's eigenes ffmpeg liegt typischerweise unter <code>/usr/lib/jellyfin-ffmpeg/ffmpeg</code>.
+                    </div>
+                </div>
+                <div class="inputContainer">
                     <label class="inputLabel" for="PreferredQuality">Bevorzugte Qualitaet</label>
                     <select id="PreferredQuality" is="emby-select" style="max-width:160px;">
                         <option value="1080p">1080p</option>

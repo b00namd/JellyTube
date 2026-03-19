@@ -59,6 +59,9 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>Gets or sets the optional path to the yt-dlp binary.</summary>
     public string YtDlpBinaryPath { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets the optional path to the ffmpeg binary (used for 1080p DASH merging).</summary>
+    public string FfmpegBinaryPath { get; set; } = string.Empty;
+
     /// <summary>Gets or sets the preferred stream quality (360p, 480p, 720p, 1080p).</summary>
     public string PreferredQuality { get; set; } = "720p";
 

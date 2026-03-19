@@ -46,8 +46,9 @@
         </member>
         <member name="M:Jellyfin.Plugin.JellyTubbing.Api.JellyTubbingController.StreamVideo(System.String,System.Threading.CancellationToken)">
             <summary>
-            Resolves a YouTube video ID to a direct stream URL and returns a 302 redirect.
-            Used by the .strm files generated for subscribed channels.
+            Resolves a YouTube video ID and streams it to the client.
+            Combined streams (≤720p): 302 redirect (seeking supported).
+            DASH streams (1080p+): ffmpeg pipe merging video+audio (-c copy, no re-encoding).
             </summary>
         </member>
         <member name="T:Jellyfin.Plugin.JellyTubbing.Channel.JellyTubbingChannel">
@@ -134,6 +135,9 @@
         </member>
         <member name="P:Jellyfin.Plugin.JellyTubbing.Configuration.PluginConfiguration.YtDlpBinaryPath">
             <summary>Gets or sets the optional path to the yt-dlp binary.</summary>
+        </member>
+        <member name="P:Jellyfin.Plugin.JellyTubbing.Configuration.PluginConfiguration.FfmpegBinaryPath">
+            <summary>Gets or sets the optional path to the ffmpeg binary (used for 1080p DASH merging).</summary>
         </member>
         <member name="P:Jellyfin.Plugin.JellyTubbing.Configuration.PluginConfiguration.PreferredQuality">
             <summary>Gets or sets the preferred stream quality (360p, 480p, 720p, 1080p).</summary>
@@ -291,7 +295,8 @@
         </member>
         <member name="T:Jellyfin.Plugin.JellyTubbing.Services.StreamResolverService">
             <summary>
-            Resolves a YouTube video ID to a direct stream URL via yt-dlp.
+            Resolves a YouTube video ID to direct stream URL(s) via yt-dlp.
+            For 1080p+, yt-dlp returns separate video and audio URLs (DASH).
             Resolved URLs are cached for 4 hours so repeated playback starts instantly.
             </summary>
         </member>
@@ -303,9 +308,10 @@
         <member name="M:Jellyfin.Plugin.JellyTubbing.Services.StreamResolverService.ResolveAsync(System.String,System.Threading.CancellationToken)">
             <summary>Resolves a YouTube video ID to a <see cref="T:MediaBrowser.Model.Dto.MediaSourceInfo"/> via yt-dlp.</summary>
         </member>
-        <member name="M:Jellyfin.Plugin.JellyTubbing.Services.StreamResolverService.ResolveUrlAsync(System.String,System.Threading.CancellationToken)">
+        <member name="M:Jellyfin.Plugin.JellyTubbing.Services.StreamResolverService.ResolveUrlsAsync(System.String,System.Threading.CancellationToken)">
             <summary>
-            Returns a cached or freshly resolved direct stream URL for the given video ID.
+            Returns cached or freshly resolved stream URLs.
+            For combined streams: Audio is null. For DASH (1080p+): both Video and Audio are set.
             </summary>
         </member>
         <member name="T:Jellyfin.Plugin.JellyTubbing.Services.StrmService">

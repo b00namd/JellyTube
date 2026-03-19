@@ -180,20 +180,72 @@ public class JellyTubbingController : ControllerBase
     // -----------------------------------------------------------------------
 
     /// <summary>
-    /// Resolves a YouTube video ID to a direct stream URL and returns a 302 redirect.
-    /// Used by the .strm files generated for subscribed channels.
+    /// Resolves a YouTube video ID and streams it to the client.
+    /// Combined streams (≤720p): 302 redirect (seeking supported).
+    /// DASH streams (1080p+): ffmpeg pipe merging video+audio (-c copy, no re-encoding).
     /// </summary>
     [HttpGet("stream/{videoId}")]
     [AllowAnonymous]
-    [ProducesResponseType(StatusCodes.Status302Found)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> StreamVideo(string videoId, CancellationToken ct)
+    public async Task StreamVideo(string videoId, CancellationToken ct)
     {
-        var url = await _resolver.ResolveUrlAsync(videoId, ct);
-        if (string.IsNullOrEmpty(url))
-            return NotFound(new { message = $"Stream-URL fuer {videoId} konnte nicht aufgeloest werden." });
+        var (videoUrl, audioUrl) = await _resolver.ResolveUrlsAsync(videoId, ct);
 
-        return Redirect(url);
+        if (string.IsNullOrEmpty(videoUrl))
+        {
+            Response.StatusCode = StatusCodes.Status404NotFound;
+            await Response.WriteAsync($"Stream fuer {videoId} konnte nicht aufgeloest werden.", ct);
+            return;
+        }
+
+        // Combined stream: simple redirect – client can seek normally
+        if (string.IsNullOrEmpty(audioUrl))
+        {
+            Response.Redirect(videoUrl);
+            return;
+        }
+
+        // DASH: merge video + audio with ffmpeg stream copy (no re-encoding)
+        var config  = Plugin.Instance!.Configuration;
+        var ffmpeg  = string.IsNullOrWhiteSpace(config.FfmpegBinaryPath) ? "ffmpeg" : config.FfmpegBinaryPath;
+
+        Response.ContentType = "video/x-matroska";
+        Response.Headers["Content-Disposition"] = "inline; filename=\"stream.mkv\"";
+
+        var psi = new ProcessStartInfo
+        {
+            FileName               = ffmpeg,
+            RedirectStandardOutput = true,
+            RedirectStandardError  = true,
+            UseShellExecute        = false,
+            CreateNoWindow         = true,
+        };
+        psi.ArgumentList.Add("-hide_banner");
+        psi.ArgumentList.Add("-loglevel"); psi.ArgumentList.Add("error");
+        psi.ArgumentList.Add("-i");        psi.ArgumentList.Add(videoUrl);
+        psi.ArgumentList.Add("-i");        psi.ArgumentList.Add(audioUrl);
+        psi.ArgumentList.Add("-c");        psi.ArgumentList.Add("copy");
+        psi.ArgumentList.Add("-f");        psi.ArgumentList.Add("matroska");
+        psi.ArgumentList.Add("pipe:1");
+
+        using var proc = new Process { StartInfo = psi };
+        proc.Start();
+
+        try
+        {
+            await proc.StandardOutput.BaseStream.CopyToAsync(Response.Body, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // Client disconnected – expected
+        }
+        finally
+        {
+            if (!proc.HasExited)
+            {
+                proc.Kill();
+                await proc.WaitForExitAsync(CancellationToken.None);
+            }
+        }
     }
 
     // -----------------------------------------------------------------------
