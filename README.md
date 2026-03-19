@@ -58,23 +58,24 @@ Lädt YouTube-Videos und Playlists direkt in die Mediathek. Nutzt [yt-dlp](https
 
 ## JellyTubbing
 
-Streamt YouTube-Videos direkt in Jellyfin – ohne Download.
+Streamt YouTube-Videos direkt in Jellyfin – ohne Download, ohne Invidious.
 
-- **Trending-Kanal:** YouTube-Trending-Videos nach Region und Kategorie direkt in Jellyfin durchsuchen und abspielen
-- **Abo-Synchronisation:** Abonnierte Kanäle werden als `.strm`-Dateien in eine Jellyfin-Bibliothek synchronisiert und sind dort durchsuchbar und abspielbar
+- **JellyTrending-Kanal:** YouTube-Trending-Videos nach Region und Kategorie direkt in Jellyfin durchsuchen und abspielen
+- **Abo-Synchronisation:** Abonnierte Kanäle werden als `.strm`-Dateien in eine Jellyfin-Bibliothek synchronisiert und sind dort durchsuch- und abspielbar
 
-Stream-URLs werden bei jedem Abspielen frisch über [yt-dlp](https://github.com/yt-dlp/yt-dlp) aufgelöst – keine Vorablösung, keine abgelaufenen Links.
+Stream-URLs werden bei jedem Abspielen frisch über [yt-dlp](https://github.com/yt-dlp/yt-dlp) aufgelöst – keine abgelaufenen Links.
 
 ### Features
 
-- Trending-Videos nach Region (DE, AT, CH, US, …) in Jellyfin browsbar
+- **JellyTrending-Kanal** mit Trending-Videos nach Region (DE, AT, CH, US, …)
 - Kategorien: Trending, Musik, Gaming, Nachrichten, Filme
-- Abonnierte Kanäle mit Google-Konto verbinden und als Bibliothek synchronisieren
-- Automatischer Bibliotheks-Scan nach jedem Sync
-- Sync-Zeitplan über Jellyfin-Aufgabenplanung konfigurierbar (Standard: alle 24 h)
-- Manueller Sync-Trigger direkt im Plugin
-- Google-Verbindung per Device Authorization Grant (kein Redirect-URI, kein öffentlicher Server nötig)
-- Client-Secret per JSON-Datei importieren
+- Abonnierte YouTube-Kanäle mit Google-Konto verbinden und als Jellyfin-Bibliothek synchronisieren
+- **Jellyfin-Bibliothek wird beim ersten Sync automatisch angelegt** – kein manuelles Einrichten nötig
+- YouTube Shorts (≤ 60 s) werden standardmäßig nicht synchronisiert (optional aktivierbar)
+- Sync-Zeitplan über **Geplante Aufgaben → JellyTubbing → Kanal-Synchronisation** konfigurierbar (Standard: alle 24 h)
+- Manueller Sync-Trigger direkt im Plugin (speichert Einstellungen automatisch)
+- Google-Verbindung per Device Authorization Grant – kein Redirect-URI, kein öffentlicher Server nötig
+- Client-Secret-JSON aus der Google Cloud Console direkt importieren
 - yt-dlp-Verfügbarkeitscheck in den Einstellungen
 - Stream-Qualität konfigurierbar (360p–1080p)
 
@@ -84,11 +85,12 @@ Stream-URLs werden bei jedem Abspielen frisch über [yt-dlp](https://github.com/
 |---|---|
 | YouTube Data API Key | Erforderlich für Trending und Kanal-Videos |
 | OAuth2 Client-ID / Secret | Erforderlich für Abo-Synchronisation |
-| STRM-Ausgabeordner | Zielordner für `.strm`-, `.nfo`- und Thumbnail-Dateien |
+| STRM-Ausgabeordner | Zielordner auf dem Server für `.strm`-, `.nfo`- und Thumbnail-Dateien |
 | Max. Videos pro Kanal | Wie viele Videos pro Kanal beim Sync geholt werden (Standard: 25) |
+| YouTube Shorts einschließen | Shorts (≤ 60 s) beim Sync berücksichtigen (Standard: aus) |
 | yt-dlp Programmpfad | Optional – leer lassen wenn yt-dlp im PATH liegt |
 | Bevorzugte Qualität | Stream-Auflösung (360p, 480p, 720p, 1080p) |
-| Trending-Region | ISO 3166-1 alpha-2 Ländercode (z. B. DE, US, GB) |
+| Trending-Region | Land für Trending-Videos im JellyTrending-Kanal (z. B. DE, US, GB) |
 
 ---
 
@@ -102,53 +104,52 @@ Stream-URLs werden bei jedem Abspielen frisch über [yt-dlp](https://github.com/
 4. **APIs & Dienste → Anmeldedaten → Anmeldedaten erstellen → API-Schlüssel**
 5. Den generierten Key im Plugin unter **YouTube Data API Key** eintragen
 
-#### 2. OAuth2-Credentials für Abo-Synchronisation erstellen
+Der API-Key ist für den **JellyTrending-Kanal** und die **Abo-Synchronisation** erforderlich.
+
+#### 2. OAuth2-Credentials erstellen (für Abo-Synchronisation)
 
 > Nur nötig, wenn abonnierte Kanäle synchronisiert werden sollen.
 
 1. [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Dienste → OAuth-Zustimmungsbildschirm**
    - Typ: **Extern**
    - App-Name, Support-E-Mail und Entwickler-E-Mail ausfüllen
-   - Unter **Scopes** → `youtube.readonly` hinzufügen
-   - Unter **Testnutzer** die eigene Google-E-Mail-Adresse eintragen
+   - Unter **Scopes**: `youtube.readonly` hinzufügen
+   - Unter **Testnutzer**: eigene Google-E-Mail eintragen
 2. **Anmeldedaten → Anmeldedaten erstellen → OAuth-Client-ID**
    - Anwendungstyp: **Fernseher und eingeschränkte Eingabegeräte**
    - Beliebigen Namen vergeben
-3. Client-ID und Client-Secret notieren (oder JSON-Datei herunterladen)
+3. JSON-Datei herunterladen (oder Client-ID und Secret notieren)
+
+> **Wichtig:** Der Anwendungstyp muss „Fernseher und eingeschränkte Eingabegeräte" sein, da JellyTubbing den Device Authorization Grant (RFC 8628) nutzt – kein öffentlicher Server oder Redirect-URI nötig.
 
 #### 3. Credentials im Plugin eintragen
 
 Im Jellyfin Dashboard → **Plugins → JellyTubbing → Einstellungen**:
 
 - **JSON importieren:** Heruntergeladene `client_secret_*.json` direkt hochladen – Client-ID und Secret werden automatisch eingetragen
-- Oder Client-ID und Client-Secret manuell eintragen
+- Oder Client-ID und Client-Secret manuell eintragen und **Einstellungen speichern**
 
 #### 4. Mit Google verbinden
 
-1. **Mit Google verbinden** klicken
-2. Es erscheint ein Code und eine URL (`accounts.google.com/device`)
-3. Die URL in einem beliebigen Browser öffnen, den Code eingeben und mit dem Google-Konto bestätigen
+1. **Mit Google verbinden** klicken (speichert die Credentials automatisch)
+2. Es erscheint ein kurzer Code und die URL `accounts.google.com/device`
+3. URL im Browser öffnen, Code eingeben und mit dem Google-Konto bestätigen
 4. Das Plugin erkennt die Bestätigung automatisch – Status wechselt zu **Mit Google verbunden**
 
-#### 5. Kanäle auswählen
+#### 5. STRM-Ausgabeordner wählen
 
-Nach erfolgreicher Verbindung erscheint die Liste aller abonnierten Kanäle. Kanäle, die synchronisiert werden sollen, anhaken.
+- Unter **STRM-Ausgabeordner** einen Pfad auf dem Server eintragen oder per **Durchsuchen** wählen (z. B. `/media/jellytubbing`)
+- Die Jellyfin-Bibliothek **JellyTubbing** wird beim ersten Sync automatisch angelegt und ist danach in der Mediathek sichtbar
 
-#### 6. STRM-Ausgabeordner als Jellyfin-Bibliothek einrichten
+#### 6. Kanäle auswählen und synchronisieren
 
-> Einmalig notwendig, damit Jellyfin die synchronisierten Videos anzeigt.
+1. Nach der Google-Verbindung erscheint die Liste aller abonnierten Kanäle
+2. Gewünschte Kanäle anhaken
+3. **Jetzt synchronisieren** klicken – speichert Einstellungen und startet den Sync sofort
+4. Nach dem Sync erscheinen die Videos in der Jellyfin-Bibliothek **JellyTubbing** (Unterordner pro Kanal)
 
-1. Jellyfin Dashboard → **Mediatheken → Mediathek hinzufügen**
-2. Typ: **Videos** (oder Mixed Content)
-3. Ordner: den konfigurierten **STRM-Ausgabeordner** auswählen
-4. Speichern und Bibliothek scannen lassen
-
-#### 7. Synchronisieren
-
-- **Jetzt synchronisieren** im Plugin klickt – speichert die Einstellungen und startet den Sync sofort
-- Oder den Zeitplan unter **Dashboard → Geplante Aufgaben → JellyTubbing → Kanal-Synchronisation** konfigurieren (Standard: täglich)
-
-Nach dem Sync erscheinen die Videos automatisch in der Jellyfin-Bibliothek (Ordner pro Kanal).
+Den automatischen Sync-Zeitplan konfigurierst du unter:
+**Administration → Geplante Aufgaben → JellyTubbing → Kanal-Synchronisation** (Standard: täglich)
 
 ---
 

@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -68,6 +70,15 @@ public class ChannelSyncTask : IScheduledTask
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(config.StrmOutputPath))
+        {
+            _logger.LogWarning("JellyTubbing sync: STRM output path not configured.");
+            progress.Report(100);
+            return;
+        }
+
+        EnsureLibraryExists(config.StrmOutputPath);
+
         _logger.LogInformation("JellyTubbing sync started for {Count} channel(s).", config.SyncedChannelIds.Length);
 
         var subs   = await _youtube.GetSubscriptionsAsync(ct);
@@ -112,5 +123,33 @@ public class ChannelSyncTask : IScheduledTask
 
         // Trigger library scan so Jellyfin picks up the new STRM files
         _ = _library.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
+    }
+
+    private void EnsureLibraryExists(string strmPath)
+    {
+        try
+        {
+            var folders = _library.GetVirtualFolders();
+            var alreadyLinked = folders.Any(f =>
+                f.Locations != null &&
+                f.Locations.Any(l => string.Equals(l, strmPath, StringComparison.OrdinalIgnoreCase)));
+
+            if (alreadyLinked)
+            {
+                _logger.LogDebug("JellyTubbing: Library for '{Path}' already exists.", strmPath);
+                return;
+            }
+
+            _logger.LogInformation("JellyTubbing: Creating library 'JellyTubbing' at '{Path}'.", strmPath);
+            _library.AddVirtualFolder(
+                "JellyTubbing",
+                CollectionTypeOptions.homevideos,
+                new LibraryOptions { PathInfos = [new MediaPathInfo { Path = strmPath }] },
+                refreshLibrary: false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "JellyTubbing: Could not auto-create library – add '{Path}' manually.", strmPath);
+        }
     }
 }

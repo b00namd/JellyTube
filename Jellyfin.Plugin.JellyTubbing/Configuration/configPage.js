@@ -63,11 +63,6 @@
             var checked = document.querySelectorAll('.jt-sub-checkbox:checked');
             config.SyncedChannelIds = Array.from(checked).map(function (cb) { return cb.dataset.channelId; });
 
-            // Update redirect hint
-            var serverUrl = config.JellyfinServerUrl.replace(/\/+$/, '');
-            var hint = document.getElementById('jt-redirect-hint');
-            if (hint) hint.textContent = serverUrl + '/api/jellytubbing/oauth-callback';
-
             ApiClient.updatePluginConfiguration(PLUGIN_ID, config).then(function () {
                 showToast('Einstellungen gespeichert.');
                 checkYtDlp();
