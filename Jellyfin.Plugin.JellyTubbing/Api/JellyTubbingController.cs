@@ -83,16 +83,13 @@ public class JellyTubbingController : ControllerBase
         var ytdlpBin = string.IsNullOrWhiteSpace(config?.YtDlpBinaryPath) ? "yt-dlp" : config.YtDlpBinaryPath;
         var ffmpegBin = string.IsNullOrWhiteSpace(config?.FfmpegBinaryPath) ? "ffmpeg" : config.FfmpegBinaryPath;
 
-        var (ytDlpOk, ytDlpVer, ytDlpErr) = await TryGetVersionAsync(ytdlpBin, "--version");
+        var (ytDlpOk, ytDlpVer, ytDlpErr)   = await TryGetVersionAsync(ytdlpBin,  "--version");
         var (ffmpegOk, ffmpegVer, ffmpegErr) = await TryGetVersionAsync(ffmpegBin, "-version");
-
-        // ffmpeg -version outputs multiple lines; keep only the first
-        var ffmpegVerShort = ffmpegVer?.Split('\n')[0].Trim();
 
         return Ok(new
         {
-            ytDlpAvailable  = ytDlpOk,  ytDlpVersion  = ytDlpVer,      ytDlpError  = ytDlpErr,
-            ffmpegAvailable = ffmpegOk, ffmpegVersion = ffmpegVerShort, ffmpegError = ffmpegErr,
+            ytDlpAvailable  = ytDlpOk,  ytDlpVersion  = ytDlpVer,  ytDlpError  = ytDlpErr,
+            ffmpegAvailable = ffmpegOk, ffmpegVersion = ffmpegVer,  ffmpegError = ffmpegErr,
         });
     }
 
@@ -280,9 +277,17 @@ public class JellyTubbingController : ControllerBase
             if (proc is null) return (false, null, "Process.Start returned null");
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            var stdout = await proc.StandardOutput.ReadToEndAsync(cts.Token);
+            var stdoutTask = proc.StandardOutput.ReadToEndAsync(cts.Token);
+            var stderrTask = proc.StandardError.ReadToEndAsync(cts.Token);
+            await Task.WhenAll(stdoutTask, stderrTask);
             await proc.WaitForExitAsync(cts.Token);
-            return (true, stdout.Split('\n')[0].Trim(), null);
+
+            // yt-dlp writes version to stdout; ffmpeg writes to stderr
+            var version = !string.IsNullOrWhiteSpace(stdoutTask.Result)
+                ? stdoutTask.Result.Split('\n')[0].Trim()
+                : stderrTask.Result.Split('\n')[0].Trim();
+
+            return (true, version, null);
         }
         catch (Exception ex)
         {
