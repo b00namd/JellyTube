@@ -27,7 +27,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets the yt-dlp format string for video quality selection.
     /// </summary>
-    public string VideoFormat { get; set; } = string.Empty;
+    public string VideoFormat { get; set; } = "bestvideo[height<=1080]+bestaudio/best[height<=1080]";
 
     /// <summary>
     /// Gets or sets the preferred output container: mp4, mkv, or webm.

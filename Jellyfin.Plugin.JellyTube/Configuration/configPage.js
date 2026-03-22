@@ -115,7 +115,7 @@
             document.getElementById('DownloadPath').value               = config.DownloadPath || '';
             document.getElementById('YtDlpBinaryPath').value            = config.YtDlpBinaryPath || '';
             document.getElementById('FfmpegBinaryPath').value           = config.FfmpegBinaryPath || '';
-            var fmt = config.VideoFormat || 'bestvideo[height<=1080]+bestaudio/best[height<=1080]';
+            var fmt = config.VideoFormat;
             var presetSel = document.getElementById('VideoFormatPreset');
             var knownPreset = false;
             for (var i = 0; i < presetSel.options.length; i++) {
