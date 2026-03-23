@@ -5,6 +5,7 @@
 !deploy.ps1
 !deploy-jellytubbing.ps1
 !deploy-finskin.ps1
+!deploy-skin.ps1
 
 # Build output
 bin/
