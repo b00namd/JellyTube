@@ -5,8 +5,8 @@
                          {
                              "changelog":  "Initiale Version",
                              "version":  "1.0.0.0",
-                             "checksum":  "313f3405ad5f4c0decb9b399fd936162",
-                             "timestamp":  "2026-03-26T06:07:23Z",
+                             "checksum":  "9d172e0a19fd68f299362f81941c9be1",
+                             "timestamp":  "2026-03-26T06:09:05Z",
                              "targetAbi":  "10.9.0.0",
                              "sourceUrl":  "https://raw.githubusercontent.com/b00namd/JellyFinPlugins/master/dist/Jellyfin.Plugin.JellyTube_1.0.0.0.zip"
                          }
@@ -24,8 +24,8 @@
                          {
                              "changelog":  "Initiale Version",
                              "version":  "1.0.0.0",
-                             "checksum":  "2c9b7292ded4d31ce3cff600a7dc9497",
-                             "timestamp":  "2026-03-26T06:07:23Z",
+                             "checksum":  "05628801d3a8df51ae71a0cbf3b82891",
+                             "timestamp":  "2026-03-26T06:09:05Z",
                              "targetAbi":  "10.9.0.0",
                              "sourceUrl":  "https://raw.githubusercontent.com/b00namd/JellyFinPlugins/master/dist/Jellyfin.Plugin.JellyTubbing_1.0.0.0.zip"
                          }
@@ -36,24 +36,5 @@
         "name":  "JellyTubbing",
         "description":  "YouTube-Videos direkt in Jellyfin streamen - via Invidious mit yt-dlp als Fallback.",
         "imageUrl":  "https://raw.githubusercontent.com/b00namd/JellyFinPlugins/master/Jellyfin.Plugin.JellyTubbing/thumb.png"
-    },
-    {
-        "owner":  "local",
-        "versions":  [
-                         {
-                             "changelog":  "Initiale Version",
-                             "version":  "1.0.0.0",
-                             "checksum":  "c5ddd3cbff465d04503ee2b20ff910b6",
-                             "timestamp":  "2026-03-26T06:07:23Z",
-                             "targetAbi":  "10.9.0.0",
-                             "sourceUrl":  "https://raw.githubusercontent.com/b00namd/JellyFinPlugins/master/dist/Jellyfin.Plugin.FinSkin_1.0.0.0.zip"
-                         }
-                     ],
-        "overview":  "Verwalte und lade Community-Skins fuer Jellyfin.",
-        "category":  "General",
-        "guid":  "a4df4c37-3ef5-4d16-8b56-2f21cf2b8e3e",
-        "name":  "FinSkin",
-        "description":  "Community skin manager for Jellyfin. Load skins from the filesystem or upload your own.",
-        "imageUrl":  "https://raw.githubusercontent.com/b00namd/JellyFinPlugins/master/Jellyfin.Plugin.FinSkin/thumb.png"
     }
 ]
